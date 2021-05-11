@@ -21,66 +21,40 @@ To use the library in your Arduino IDE sketch, just copy the files
 
 ### Example Code
 
-Example code for using the library (to see a more complete example
-with error checking, see the file `esp32-wii-nunchuk.ino`):
+Example code for Nunchuk use (to see a more complete example with
+controller type detection, see `esp32-wii-nunchuk.ino`):
 
 ```C++
 #include "wii_i2c.h"
 
-// pins connected to the controller:
+// pins connected to the Nunchuk:
 #define PIN_SDA  32
 #define PIN_SCL  33
-
-unsigned int controller_type = 0;
 
 void setup()
 {
   Serial.begin(115200);
 
-  wii_i2c_init(PIN_SDA, PIN_SCL);
-  const unsigned char *ident = wii_i2c_read_ident();
-  controller_type = wii_i2c_decode_ident(ident);
-  switch (controller_type) {
-  case WII_I2C_IDENT_NUNCHUK: Serial.printf("-> nunchuk detected\n"); break;
-  case WII_I2C_IDENT_CLASSIC: Serial.printf("-> classic controller detected\n"); break;
-  default:                    Serial.printf("-> unknown controller detected: 0x%06x\n", controller_type); break;
+  if (wii_i2c_init(PIN_SDA, PIN_SCL) != 0) {
+    Serial.printf("Error initializing nunchuk :(");
+    return;
   }
-  wii_i2c_request_state();  // request first state
+  wii_i2c_request_state();
 }
 
 void loop()
 {
-  const unsigned char *data = wii_i2c_read_state();  // read current state
-  wii_i2c_request_state();                           // request next state
+  const unsigned char *data = wii_i2c_read_state();
+  wii_i2c_request_state();
   if (! data) {
-    delay(1000);
-    return;
+    Serial.printf("no data available :(")
+  } else {
+    wii_i2c_nunchuk_state state;
+    wii_i2c_decode_nunchuk(data, &state);
+    Serial.printf("Stick position: (%d,%d)\n", state.x, state.y);
+    Serial.printf("C button is %s\n", (state.c) ? "pressed" : "not pressed");
+    Serial.printf("Z button is %s\n", (state.z) ? "pressed" : "not pressed");
   }
-
-  switch (controller_type) {
-  case WII_I2C_IDENT_NUNCHUK:
-  {
-     wii_i2c_nunchuk_state state;
-     wii_i2c_decode_nunchuk(data, &state);
-     Serial.printf("Z button is %s\n", (state.z) ? "pressed" : "not pressed");
-  }
-  break;
-  
-  case WII_I2C_IDENT_CLASSIC:
-  {
-     wii_i2c_classic_state state;
-     wii_i2c_decode_classic(data, &state);
-     Serial.printf("B button is %s\n", (state.b) ? "pressed" : "not pressed");
-  }
-  break;
-  
-  default:
-    Serial.printf("unknown controller data: %02x %02x %02x %02x %02x %02x\n",
-                  data[0], data[1], data[2], data[3], data[4], data[5]);
-    break;
-  }
-
   delay(1000);
 }
 ```
-
