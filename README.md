@@ -19,10 +19,18 @@ have none of these devices so I don't know for sure.
 To use the library in your Arduino IDE sketch, just copy the files
 `wii_i2c.c` and `wii_i2c.h` to your sketch directory.
 
+### Coexisting with Arduino Wire Library
+
+The Arduino Wire Library for the ESP32 (from `Wire.h`) uses I2C port 0
+for the `Wire` object, and port 1 for the `Wire1` object.  So don't
+use `Wire` if using I2C port 0 with this library, and don't use
+`Wire1` if using I2C port 1.
+
 ### Example Code
 
-Example code for Nunchuk use (for a more complete example with
-controller type detection, see `esp32-wii-nunchuk.ino`):
+Here's a simple example using the Wii Nunchuk. For a more complete
+example that detects and handles multiple controller types, see
+`esp32-wii-nunchuk.ino`.
 
 ```C++
 #include "wii_i2c.h"
