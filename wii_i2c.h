@@ -1,6 +1,7 @@
 #ifndef WII_I2C_H_FILE
 #define WII_I2C_H_FILE
 
+#define WII_I2C_IDENT_NONE     0
 #define WII_I2C_IDENT_NUNCHUK  0xa4200000
 #define WII_I2C_IDENT_CLASSIC  0xa4200101
 
@@ -8,7 +9,7 @@
 extern "C" {
 #endif
 
-int wii_i2c_init(int sda_gpio, int scl_gpio);
+int wii_i2c_init(int i2c_port_num, int sda_pin, int scl_pin);
 const unsigned char *wii_i2c_read_ident(void);
 unsigned int wii_i2c_decode_ident(const unsigned char *ident);
 int wii_i2c_request_state(void);

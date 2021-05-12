@@ -2,6 +2,7 @@
 
 #define PIN_SDA  32
 #define PIN_SCL  33
+#define WII_I2C_PORT 0
 
 unsigned int controller_type = 0;
 
@@ -35,7 +36,7 @@ void setup()
   Serial.begin(115200);
   Serial.printf("Starting...\n");
 
-  if (wii_i2c_init(PIN_SDA, PIN_SCL) != 0) {
+  if (wii_i2c_init(WII_I2C_PORT, PIN_SDA, PIN_SCL) != 0) {
     Serial.printf("ERROR initializing wii i2c controller\n");
     return;
   }

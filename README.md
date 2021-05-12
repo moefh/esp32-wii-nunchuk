@@ -9,10 +9,10 @@ reliably in the ESP32 with Wii controllers.
 
 ![ESP32 connected to a Wii Nunchuk](images/photo.jpg)
 
-This library supports the Wii Nunchuk and the Wii Classic Controller.
-It should be easy to adapt it to work with other I2C devices that plug
-in the Wiimote (like the Classic Controller Pro, Balance Board, etc.)
-with the information available in the [Wiibrew
+This library supports the **Wii Nunchuk** and the **Wii Classic
+Controller**.  It shouldn't be hard to adapt it to work with other I2C
+devices that plug in the Wiimote (like the Classic Controller Pro, Wii
+Motion Plus, etc.) with the information available in the [Wiibrew
 project](http://wiibrew.org/wiki/Wiimote/Extension_Controllers), but I
 have none of these devices so I don't know for sure.
 
@@ -21,21 +21,24 @@ To use the library in your Arduino IDE sketch, just copy the files
 
 ### Example Code
 
-Example code for Nunchuk use (to see a more complete example with
+Example code for Nunchuk use (for a more complete example with
 controller type detection, see `esp32-wii-nunchuk.ino`):
 
 ```C++
 #include "wii_i2c.h"
 
 // pins connected to the Nunchuk:
-#define PIN_SDA  32
-#define PIN_SCL  33
+#define PIN_SDA      32
+#define PIN_SCL      33
+
+// ESP32 I2C port (0 or 1)
+#define WII_I2C_PORT 0
 
 void setup()
 {
   Serial.begin(115200);
 
-  if (wii_i2c_init(PIN_SDA, PIN_SCL) != 0) {
+  if (wii_i2c_init(WII_I2C_PORT, PIN_SDA, PIN_SCL) != 0) {
     Serial.printf("Error initializing nunchuk :(");
     return;
   }
