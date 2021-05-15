@@ -13,6 +13,13 @@ static const uint8_t data_req_data[]  = { 0x00 };
 static i2c_port_t wii_i2c_port_num;
 static uint8_t read_data[6];
 
+static TaskHandle_t read_state_task_handle;
+static int read_state_task_delay;
+static SemaphoreHandle_t read_mutex;
+static uint8_t shared_read_data[6];
+static volatile uint8_t shared_copy_data[6];
+static volatile uint32_t shared_copy_ready;
+
 static esp_err_t wii_i2c_setup_i2c(i2c_port_t i2c_port_num, int sda_pin, int scl_pin)
 {
   wii_i2c_port_num = i2c_port_num;
@@ -138,3 +145,49 @@ void wii_i2c_decode_classic(const unsigned char *data, struct wii_i2c_classic_st
   state->zl    = (data[5] & 0x80) ? 0 : 1;
   state->zr    = (data[5] & 0x04) ? 0 : 1;
 }
+
+#if WII_I2C_ENABLE_MULTI_CORE
+
+static void read_state_task_func(void *params)
+{
+  while (true) {
+    wii_i2c_request_state();
+    vTaskDelay(read_state_task_delay / portTICK_PERIOD_MS);
+    if (wii_i2c_read(shared_read_data, sizeof(shared_read_data)) == ESP_OK) {
+      xSemaphoreTake(read_mutex, portMAX_DELAY);
+      memcpy((unsigned char *) shared_copy_data, shared_read_data, sizeof(shared_copy_data));
+      shared_copy_ready = 1;
+      xSemaphoreGive(read_mutex);
+    }
+  }
+}
+
+int wii_i2c_start_read_task(int cpu_num, int delay)
+{
+  read_state_task_delay = delay;
+  read_mutex = xSemaphoreCreateMutex();
+  if (! read_mutex) {
+    return 1;
+  }
+  
+  BaseType_t ret = xTaskCreatePinnedToCore(read_state_task_func, "wiiI2CTask", 1024, NULL, 0, &read_state_task_handle, cpu_num);
+  if (ret != pdPASS) {
+    vSemaphoreDelete(read_mutex);
+    return 1;
+  }
+  return 0;
+}
+
+const unsigned char *wii_i2c_read_data_from_task()
+{
+  if (! shared_copy_ready) return NULL;
+  
+  xSemaphoreTake(read_mutex, portMAX_DELAY);
+  memcpy(read_data, (unsigned char *) shared_copy_data, sizeof(read_data));
+  shared_copy_ready = 0;
+  xSemaphoreGive(read_mutex);
+  
+  return (const unsigned char *) read_data;
+}
+
+#endif /* WII_I2C_ENABLE_MULTI_CORE */
